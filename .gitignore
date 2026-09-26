@@ -1,0 +1,8 @@
+.venv/
+.local/
+.work/
+__pycache__/
+.pytest_cache/
+*.pyc
+.env
+.DS_Store
