@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "义乌商贸库存管家",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "paths": {
     "/api/v1/session": {
@@ -311,15 +311,28 @@
       "post": {
         "summary": "New Sku",
         "operationId": "new_sku_api_v1_skus_post",
+        "parameters": [
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 120,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/SKU"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -347,15 +360,28 @@
       "post": {
         "summary": "New Warehouse",
         "operationId": "new_warehouse_api_v1_warehouses_post",
+        "parameters": [
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 120,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/Warehouse"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -411,6 +437,458 @@
         }
       }
     },
+    "/api/v1/imports/template/{kind}": {
+      "get": {
+        "summary": "Template",
+        "operationId": "template_api_v1_imports_template__kind__get",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/imports": {
+      "get": {
+        "summary": "Batches",
+        "operationId": "batches_api_v1_imports_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/imports/preview": {
+      "post": {
+        "summary": "Preview",
+        "operationId": "preview_api_v1_imports_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportPreview"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/imports/{batch_id}/apply": {
+      "post": {
+        "summary": "Apply Import",
+        "operationId": "apply_import_api_v1_imports__batch_id__apply_post",
+        "parameters": [
+          {
+            "name": "batch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Batch Id"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 120,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/purchases": {
+      "get": {
+        "summary": "Purchases",
+        "operationId": "purchases_api_v1_purchases_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "New Purchase",
+        "operationId": "new_purchase_api_v1_purchases_post",
+        "parameters": [
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 120,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Purchase"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/purchases/{order_id}/receive": {
+      "post": {
+        "summary": "Receive",
+        "operationId": "receive_api_v1_purchases__order_id__receive_post",
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Order Id"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 120,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Receive"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/purchases/{order_id}/close": {
+      "post": {
+        "summary": "Close",
+        "operationId": "close_api_v1_purchases__order_id__close_post",
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Order Id"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 120,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Close"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/approvals": {
+      "get": {
+        "summary": "Approvals",
+        "operationId": "approvals_api_v1_approvals_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Request Approval",
+        "operationId": "request_approval_api_v1_approvals_post",
+        "parameters": [
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 120,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/Adjustment"
+                  },
+                  {
+                    "$ref": "#/components/schemas/Reversal"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "kind",
+                  "mapping": {
+                    "adjustment": "#/components/schemas/Adjustment",
+                    "reversal": "#/components/schemas/Reversal"
+                  }
+                },
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/approvals/{approval_id}/review": {
+      "post": {
+        "summary": "Review",
+        "operationId": "review_api_v1_approvals__approval_id__review_post",
+        "parameters": [
+          {
+            "name": "approval_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Approval Id"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 120,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Review"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "summary": "Index",
@@ -430,6 +908,104 @@
   },
   "components": {
     "schemas": {
+      "Adjustment": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "adjustment",
+            "title": "Kind"
+          },
+          "warehouse_id": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Warehouse Id"
+          },
+          "sku_id": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Sku Id"
+          },
+          "expected_version": {
+            "type": "integer",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Expected Version"
+          },
+          "delta": {
+            "$ref": "#/components/schemas/Delta"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 2,
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "warehouse_id",
+          "sku_id",
+          "expected_version",
+          "delta",
+          "reason"
+        ],
+        "title": "Adjustment"
+      },
+      "Close": {
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Expected Version"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 2,
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_version",
+          "reason"
+        ],
+        "title": "Close"
+      },
+      "Delta": {
+        "properties": {
+          "g": {
+            "type": "integer",
+            "maximum": 1000000.0,
+            "minimum": -1000000.0,
+            "title": "G",
+            "default": 0
+          },
+          "q": {
+            "type": "integer",
+            "maximum": 1000000.0,
+            "minimum": -1000000.0,
+            "title": "Q",
+            "default": 0
+          },
+          "d": {
+            "type": "integer",
+            "maximum": 1000000.0,
+            "minimum": -1000000.0,
+            "title": "D",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Delta"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -442,6 +1018,32 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "ImportPreview": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "skus",
+              "warehouses",
+              "opening"
+            ],
+            "title": "Kind"
+          },
+          "csv_text": {
+            "type": "string",
+            "maxLength": 1000000,
+            "minLength": 1,
+            "title": "Csv Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "csv_text"
+        ],
+        "title": "ImportPreview"
       },
       "Login": {
         "properties": {
@@ -465,6 +1067,75 @@
           "password"
         ],
         "title": "Login"
+      },
+      "Purchase": {
+        "properties": {
+          "warehouse_id": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Warehouse Id"
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Code"
+          },
+          "supplier": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Supplier"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Note",
+            "default": ""
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseLine"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Lines"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "warehouse_id",
+          "code",
+          "supplier",
+          "lines"
+        ],
+        "title": "Purchase"
+      },
+      "PurchaseLine": {
+        "properties": {
+          "sku_id": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Sku Id"
+          },
+          "quantity": {
+            "type": "integer",
+            "maximum": 1000000.0,
+            "minimum": 1.0,
+            "title": "Quantity"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sku_id",
+          "quantity"
+        ],
+        "title": "PurchaseLine"
       },
       "Receipt": {
         "properties": {
@@ -529,6 +1200,144 @@
           "g"
         ],
         "title": "Receipt"
+      },
+      "Receive": {
+        "properties": {
+          "reference": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Reference"
+          },
+          "expected_version": {
+            "type": "integer",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Expected Version"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/ReceiveLine"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Lines"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reference",
+          "expected_version",
+          "lines"
+        ],
+        "title": "Receive"
+      },
+      "ReceiveLine": {
+        "properties": {
+          "sku_id": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Sku Id"
+          },
+          "expected_version": {
+            "type": "integer",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Expected Version"
+          },
+          "g": {
+            "type": "integer",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "G"
+          },
+          "q": {
+            "type": "integer",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Q",
+            "default": 0
+          },
+          "d": {
+            "type": "integer",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "D",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sku_id",
+          "expected_version",
+          "g"
+        ],
+        "title": "ReceiveLine"
+      },
+      "Reversal": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "reversal",
+            "title": "Kind"
+          },
+          "original_id": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Original Id"
+          },
+          "expected_version": {
+            "type": "integer",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Expected Version"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 2,
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "original_id",
+          "expected_version",
+          "reason"
+        ],
+        "title": "Reversal"
+      },
+      "Review": {
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "approve",
+              "reject"
+            ],
+            "title": "Decision"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 2,
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "decision",
+          "note"
+        ],
+        "title": "Review"
       },
       "SKU": {
         "properties": {

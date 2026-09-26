@@ -1,64 +1,28 @@
--- Generated schema draft; PostgreSQL runtime not yet tested.
+-- Reference DDL only. Runtime PostgreSQL migration remains unverified.
 
-CREATE TABLE tenants (
+
+CREATE TABLE approval_requests (
 	id VARCHAR NOT NULL,
-	name VARCHAR NOT NULL,
+	tenant_id VARCHAR NOT NULL,
+	warehouse_id VARCHAR,
+	sku_id VARCHAR,
+	kind VARCHAR,
+	original_id VARCHAR,
+	delta JSON,
+	expected_version INTEGER,
+	reason VARCHAR,
+	requester_id VARCHAR,
+	reviewer_id VARCHAR,
+	review_note VARCHAR,
+	status VARCHAR,
+	document_id VARCHAR,
+	created_at VARCHAR,
+	reviewed_at VARCHAR,
 	PRIMARY KEY (id)
 )
 
 ;
 
-CREATE TABLE users (
-	id VARCHAR NOT NULL,
-	tenant_id VARCHAR NOT NULL,
-	username VARCHAR NOT NULL,
-	name VARCHAR,
-	password_hash VARCHAR,
-	role VARCHAR,
-	warehouse_ids JSON,
-	PRIMARY KEY (id),
-	UNIQUE (username)
-)
-
-;
-
-CREATE TABLE sessions (
-	token_hash VARCHAR NOT NULL,
-	user_id VARCHAR,
-	csrf VARCHAR,
-	expires INTEGER,
-	PRIMARY KEY (token_hash)
-)
-
-;
-
-CREATE TABLE warehouses (
-	id VARCHAR NOT NULL,
-	tenant_id VARCHAR NOT NULL,
-	code VARCHAR,
-	name VARCHAR,
-	country VARCHAR,
-	timezone VARCHAR,
-	authority VARCHAR,
-	PRIMARY KEY (id),
-	UNIQUE (tenant_id, code)
-)
-
-;
-
-CREATE TABLE skus (
-	id VARCHAR NOT NULL,
-	tenant_id VARCHAR NOT NULL,
-	code VARCHAR,
-	name VARCHAR,
-	spec VARCHAR,
-	unit VARCHAR,
-	barcode VARCHAR,
-	PRIMARY KEY (id),
-	UNIQUE (tenant_id, code)
-)
-
-;
 
 CREATE TABLE balances (
 	id VARCHAR NOT NULL,
@@ -96,6 +60,7 @@ CREATE TABLE balances (
 
 ;
 
+
 CREATE TABLE documents (
 	id VARCHAR NOT NULL,
 	tenant_id VARCHAR NOT NULL,
@@ -112,6 +77,39 @@ CREATE TABLE documents (
 )
 
 ;
+
+
+CREATE TABLE idempotency (
+	id VARCHAR NOT NULL,
+	tenant_id VARCHAR,
+	actor_id VARCHAR,
+	key VARCHAR,
+	fingerprint VARCHAR,
+	response JSON,
+	PRIMARY KEY (id),
+	UNIQUE (tenant_id, actor_id, key)
+)
+
+;
+
+
+CREATE TABLE import_batches (
+	id VARCHAR NOT NULL,
+	tenant_id VARCHAR NOT NULL,
+	actor_id VARCHAR,
+	kind VARCHAR,
+	digest VARCHAR,
+	rows JSON,
+	errors JSON,
+	status VARCHAR,
+	created_at VARCHAR,
+	applied_at VARCHAR,
+	PRIMARY KEY (id),
+	UNIQUE (tenant_id, kind, digest)
+)
+
+;
+
 
 CREATE TABLE ledger (
 	id VARCHAR NOT NULL,
@@ -132,6 +130,7 @@ CREATE TABLE ledger (
 
 ;
 
+
 CREATE TABLE outbox (
 	id VARCHAR NOT NULL,
 	tenant_id VARCHAR,
@@ -146,15 +145,136 @@ CREATE TABLE outbox (
 
 ;
 
-CREATE TABLE idempotency (
+
+CREATE TABLE purchase_lines (
 	id VARCHAR NOT NULL,
-	tenant_id VARCHAR,
-	actor_id VARCHAR,
-	key VARCHAR,
-	fingerprint VARCHAR,
-	response JSON,
+	order_id VARCHAR NOT NULL,
+	sku_id VARCHAR,
+	ordered INTEGER NOT NULL,
+	received INTEGER NOT NULL,
 	PRIMARY KEY (id),
-	UNIQUE (tenant_id, actor_id, key)
+	UNIQUE (order_id, sku_id),
+	CHECK (ordered > 0),
+	CHECK (received >= 0 AND received <= ordered)
+)
+
+;
+
+
+CREATE TABLE purchase_orders (
+	id VARCHAR NOT NULL,
+	tenant_id VARCHAR NOT NULL,
+	warehouse_id VARCHAR,
+	code VARCHAR,
+	supplier VARCHAR,
+	note VARCHAR,
+	status VARCHAR,
+	version INTEGER,
+	actor_id VARCHAR,
+	created_at VARCHAR,
+	close_reason VARCHAR,
+	PRIMARY KEY (id),
+	UNIQUE (tenant_id, code)
+)
+
+;
+
+
+CREATE TABLE purchase_receipts (
+	id VARCHAR NOT NULL,
+	tenant_id VARCHAR NOT NULL,
+	order_id VARCHAR,
+	reference VARCHAR,
+	document_ids JSON,
+	created_at VARCHAR,
+	PRIMARY KEY (id),
+	UNIQUE (tenant_id, order_id, reference)
+)
+
+;
+
+
+CREATE TABLE reversal_links (
+	original_id VARCHAR NOT NULL,
+	tenant_id VARCHAR NOT NULL,
+	reversal_id VARCHAR,
+	approval_id VARCHAR,
+	PRIMARY KEY (original_id),
+	UNIQUE (reversal_id)
+)
+
+;
+
+
+CREATE TABLE schema_migrations (
+	version SERIAL NOT NULL,
+	name VARCHAR NOT NULL,
+	PRIMARY KEY (version)
+)
+
+;
+
+
+CREATE TABLE sessions (
+	token_hash VARCHAR NOT NULL,
+	user_id VARCHAR,
+	csrf VARCHAR,
+	expires INTEGER,
+	PRIMARY KEY (token_hash)
+)
+
+;
+
+
+CREATE TABLE skus (
+	id VARCHAR NOT NULL,
+	tenant_id VARCHAR NOT NULL,
+	code VARCHAR,
+	name VARCHAR,
+	spec VARCHAR,
+	unit VARCHAR,
+	barcode VARCHAR,
+	PRIMARY KEY (id),
+	UNIQUE (tenant_id, code)
+)
+
+;
+
+
+CREATE TABLE tenants (
+	id VARCHAR NOT NULL,
+	name VARCHAR NOT NULL,
+	PRIMARY KEY (id)
+)
+
+;
+
+
+CREATE TABLE users (
+	id VARCHAR NOT NULL,
+	tenant_id VARCHAR NOT NULL,
+	username VARCHAR NOT NULL,
+	name VARCHAR,
+	password_hash VARCHAR,
+	role VARCHAR,
+	warehouse_ids JSON,
+	PRIMARY KEY (id),
+	UNIQUE (username)
+)
+
+;
+
+
+CREATE TABLE warehouses (
+	id VARCHAR NOT NULL,
+	tenant_id VARCHAR NOT NULL,
+	code VARCHAR,
+	name VARCHAR,
+	country VARCHAR,
+	timezone VARCHAR,
+	authority VARCHAR,
+	PRIMARY KEY (id),
+	UNIQUE (tenant_id, code)
 )
 
 ;

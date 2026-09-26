@@ -8,7 +8,8 @@ from .domain import uid, now, FIELDS
 from .security import hash_password
 
 def seed(engine, password=None):
-    db.metadata.create_all(engine)
+    from .migrations import migrate
+    migrate(engine)
     tenant='demo-yiwu'
     with db.write(engine,tenant) as c:
         if c.execute(select(db.tenants).where(db.tenants.c.id==tenant)).first():return None

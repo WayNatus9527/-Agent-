@@ -65,9 +65,10 @@ def create_app(engine=None):
     engine = engine or db.make_engine()
     @asynccontextmanager
     async def lifespan(app):
-        db.metadata.create_all(engine)
+        from .migrations import migrate
+        migrate(engine)
         yield
-    app = FastAPI(title='义乌商贸库存管家',version='0.1.0',lifespan=lifespan)
+    app = FastAPI(title='义乌商贸库存管家',version='0.2.0',lifespan=lifespan)
     app.state.engine = engine
     app.add_middleware(TrustedHostMiddleware,allowed_hosts=['127.0.0.1','localhost','testserver'])
     attempts = defaultdict(deque)
@@ -126,12 +127,12 @@ def create_app(engine=None):
             c.execute(delete(db.sessions).where(db.sessions.c.token_hash==token_hash(request.cookies.get('inventory_session',''))))
             c.execute(insert(db.sessions).values(token_hash=token_hash(token),user_id=actor['id'],csrf=csrf,expires=int(time.time())+8*3600))
         response.set_cookie('inventory_session',token,httponly=True,samesite='strict',secure=os.getenv('COOKIE_SECURE')=='1',max_age=8*3600)
-        return {'name':actor['name'],'role':actor['role'],'csrf':csrf}
+        return {'id':actor['id'],'name':actor['name'],'role':actor['role'],'csrf':csrf}
 
     @app.get('/api/v1/session')
     def session(request:Request):
         actor,csrf=actor_for(request)
-        return {'name':actor['name'],'role':actor['role'],'csrf':csrf}
+        return {'id':actor['id'],'name':actor['name'],'role':actor['role'],'csrf':csrf}
     @app.delete('/api/v1/session')
     def logout(request:Request,response:Response):
         actor_for(request,True)
@@ -188,17 +189,15 @@ def create_app(engine=None):
         actor,_=actor_for(request,True)
         return stock_action(engine,actor,'sale',body.model_dump(),idempotency_key)
     @app.post('/api/v1/skus',status_code=201)
-    def new_sku(body:SKU,request:Request):
+    def new_sku(body:SKU,request:Request,idempotency_key:Annotated[str,Header(min_length=8,max_length=120)]):
         actor,_=actor_for(request,True);require_role(actor,'admin')
-        row={'id':uid(),'tenant_id':actor['tenant_id'],**body.model_dump()}
-        with db.write(engine,actor['tenant_id']) as c:c.execute(insert(db.skus).values(**row))
-        return row
+        from .workflows import catalog_create
+        return catalog_create(engine,actor,'skus',body.model_dump(),idempotency_key)
     @app.post('/api/v1/warehouses',status_code=201)
-    def new_warehouse(body:Warehouse,request:Request):
+    def new_warehouse(body:Warehouse,request:Request,idempotency_key:Annotated[str,Header(min_length=8,max_length=120)]):
         actor,_=actor_for(request,True);require_role(actor,'admin')
-        row={'id':uid(),'tenant_id':actor['tenant_id'],**body.model_dump()}
-        with db.write(engine,actor['tenant_id']) as c:c.execute(insert(db.warehouses).values(**row))
-        return row
+        from .workflows import catalog_create
+        return catalog_create(engine,actor,'warehouses',body.model_dump(),idempotency_key)
     @app.get('/api/v1/inventory/export')
     def export(request:Request):
         rows=inventory(request)
@@ -216,7 +215,9 @@ def create_app(engine=None):
             writer.writerow([safe(x) for x in [p['code'],p['name'],p['spec'],whs[r['warehouse_id']]['name'],r['g'],r['q'],r['d'],r['r'],r['t'],r['h'],r['b'],r['available'],r['offline_available'],r['updated_at']]])
         return Response('\ufeff'+out.getvalue(),media_type='text/csv; charset=utf-8',headers={'Content-Disposition':'attachment; filename="inventory.csv"'})
     @app.get('/health')
-    def health():return {'status':'ok','version':'0.1.0','environment':'local-development'}
+    def health():return {'status':'ok','version':'0.2.0','environment':'local-development'}
+    from .phase2 import install
+    install(app,engine,actor_for,scope)
     static=Path(__file__).parent/'static'
     app.mount('/static',StaticFiles(directory=static),name='static')
     @app.get('/')

@@ -146,17 +146,17 @@ def test_transaction_failure_keeps_all_records_unchanged(env,monkeypatch):
 
 def test_new_sku_stock_and_csv_formula_escape(env):
     _,client=env
-    response=client.post('/api/v1/skus',json={'code':'=1+1','name':'测试商品','spec':'单件','unit':'件'})
+    response=client.post('/api/v1/skus',headers={'Idempotency-Key':'create-new-sku'},json={'code':'=1+1','name':'测试商品','spec':'单件','unit':'件'})
     assert response.status_code==201
     sid=response.json()['id']
     assert post(client,{**body(0),'sku_id':sid}).status_code==200
     assert "'=1+1" in client.get('/api/v1/inventory/export').text
-    assert client.post('/api/v1/skus',json={'code':'=1+1','name':'测试商品','spec':'单件'}).status_code==409
+    assert client.post('/api/v1/skus',headers={'Idempotency-Key':'create-duplicate-sku'},json={'code':'=1+1','name':'测试商品','spec':'单件'}).status_code==409
 
 def test_new_warehouse_timezone_and_stock(env):
     _,client=env
-    assert client.post('/api/v1/warehouses',json={'code':'NEW','name':'新仓','timezone':'no/such'}).status_code==422
-    r=client.post('/api/v1/warehouses',json={'code':'NEW','name':'新仓'})
+    assert client.post('/api/v1/warehouses',headers={'Idempotency-Key':'create-new-warehouse'},json={'code':'NEW','name':'新仓','timezone':'no/such'}).status_code==422
+    r=client.post('/api/v1/warehouses',headers={'Idempotency-Key':'create-new-warehouse'},json={'code':'NEW','name':'新仓'})
     assert r.status_code==201
     assert post(client,{**body(0),'warehouse_id':r.json()['id']}).status_code==200
 
