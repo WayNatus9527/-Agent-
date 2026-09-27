@@ -2,3 +2,5 @@
 
 textarea{width:100%;padding:12px;border:1px solid #d9e2dc;border-radius:8px;font:inherit;resize:vertical;background:#fff}fieldset{border:1px solid #d9e2dc;border-radius:10px;margin:14px 0;padding:16px}legend{font-weight:600}details{margin:14px 0}.form-card+.form-card{margin-top:20px}.form-card>button{margin-top:16px}.purchase-line{border-bottom:1px solid #e7ebe8;padding:12px 0}.sidebar{overflow-y:auto}@media(max-width:800px){.sidebar nav{overflow-x:auto;flex-wrap:nowrap}.sidebar nav button{flex-shrink:0}}
 @media(max-width:760px){.sidebar nav:last-of-type{display:flex}.page-head{gap:12px;flex-wrap:wrap}.card-head{gap:12px;flex-wrap:wrap}}
+
+.check-line{display:flex;align-items:center;gap:10px;margin:8px 0}.check-line input{width:auto}.action-buttons{flex-wrap:wrap}.form-card details{overflow-wrap:anywhere}

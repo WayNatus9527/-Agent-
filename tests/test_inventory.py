@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+from uuid import uuid4
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 import pytest
@@ -11,14 +14,27 @@ from app.security import hash_password
 
 @pytest.fixture
 def env(tmp_path):
-    engine=db.make_engine('sqlite:///'+str(tmp_path/'test.db'))
-    seed(engine,password='test-password')
-    with TestClient(create_app(engine)) as client:
-        r=client.post('/api/v1/session',json={'username':'admin','password':'test-password'})
-        assert r.status_code==200
-        client.headers['X-CSRF-Token']=r.json()['csrf']
-        yield engine,client
-    engine.dispose()
+    url_file=os.environ.get('TEST_DATABASE_URL_FILE')
+    control=None;schema=None
+    if url_file:
+        url=Path(url_file).read_text().strip()
+        assert url.startswith('postgresql+psycopg://')
+        control=db.make_engine(url);schema='test_'+uuid4().hex
+        with control.begin() as conn:conn.exec_driver_sql('CREATE SCHEMA '+schema)
+        engine=db.make_engine(url,{'options':'-csearch_path='+schema})
+    else:engine=db.make_engine('sqlite:///'+str(tmp_path/'test.db'))
+    try:
+        seed(engine,password='test-password')
+        with TestClient(create_app(engine)) as client:
+            r=client.post('/api/v1/session',json={'username':'admin','password':'test-password'})
+            assert r.status_code==200
+            client.headers['X-CSRF-Token']=r.json()['csrf']
+            yield engine,client
+    finally:
+        engine.dispose()
+        if control:
+            with control.begin() as conn:conn.exec_driver_sql('DROP SCHEMA '+schema+' CASCADE')
+            control.dispose()
 
 def actor(engine,username='admin'):
     with engine.connect() as c:return dict(c.execute(select(db.users).where(db.users.c.username==username)).mappings().one())

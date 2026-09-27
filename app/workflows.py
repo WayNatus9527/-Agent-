@@ -21,6 +21,8 @@ def fail(code,message,status=409):raise BusinessError(code,message,status)
 def command(engine,actor,kind,body,key,action):
     digest=hashlib.sha256(json.dumps({'kind':kind,'body':body},sort_keys=True,ensure_ascii=False).encode()).hexdigest()
     with db.write(engine,actor['tenant_id']) as c:
+        from .accounts import assert_current
+        assert_current(c,actor)
         old=c.execute(select(db.requests).where(db.requests.c.tenant_id==actor['tenant_id'],db.requests.c.actor_id==actor['id'],db.requests.c.key==key)).mappings().first()
         if old:
             if old['fingerprint']!=digest:fail('IDEMPOTENCY_CONFLICT','请求编号已用于其他内容')
@@ -52,6 +54,8 @@ def movement(c,actor,row,delta,kind,source,note,expected):
     before={f:row[f] for f in FIELDS}
     for f in FIELDS:row[f]+=delta.get(f,0)
     valid_balance(row)
+    from .operations import protect_pending_quality
+    protect_pending_quality(c,actor,row)
     timestamp=now();row['version']+=1;row['updated_at']=timestamp
     if c.execute(select(db.balances.c.id).where(db.balances.c.id==row['id'])).first():
         c.execute(update(db.balances).where(db.balances.c.id==row['id']).values(**row))
@@ -195,6 +199,8 @@ def original(c,actor,document_id):
     get_warehouse(c,actor,row['warehouse_id'],True)
     if row['kind'] not in ('receipt','sale','purchase_receipt','adjustment'):fail('UNSUPPORTED_REVERSAL','此类单据不可冲正；期初数据须通过审批调整，冲正单不可再次冲正')
     if c.execute(select(reversals).where(reversals.c.original_id==document_id)).first():fail('ALREADY_REVERSED','该单据已冲正')
+    from .operations import returns
+    if c.execute(select(returns.c.id).where(returns.c.original_id==document_id,returns.c.tenant_id==actor['tenant_id'])).first():fail('HAS_RETURNS','原单已关联退货，不能再按原单全额冲正')
     entry=c.execute(select(db.ledger).where(db.ledger.c.document_id==document_id,db.ledger.c.tenant_id==actor['tenant_id'])).mappings().one()
     return row,{f:entry['before'][f]-entry['after'][f] for f in FIELDS}
 

@@ -5,16 +5,17 @@ from . import db
 versions = Table('schema_migrations', db.metadata,
                  Column('version', Integer, primary_key=True), Column('name', String, nullable=False))
 BASE = ('tenants','users','sessions','warehouses','skus','balances','documents','ledger','outbox','idempotency')
+PHASE3 = ('transfers','transfer_lines','transfer_events','transfer_claims','return_orders','quality_events','user_settings','admin_audit')
 PHASE2 = ('import_batches','purchase_orders','purchase_lines','purchase_receipts','approval_requests','reversal_links')
 
 def migrate(engine):
-    from . import workflows  # Register the new tables before migration.
+    from . import workflows, operations, accounts  # Register all additive schemas.
     with db.write(engine, '__schema_migration__') as c:
         versions.create(c, checkfirst=True)
         applied = set(c.execute(select(versions.c.version)).scalars())
-        if applied - {1, 2}:
+        if applied - {1, 2, 3}:
             raise RuntimeError('Database schema is newer than this application')
-        for version, name, tables in [(1,'phase_one_baseline',BASE),(2,'imports_purchases_approvals',PHASE2)]:
+        for version, name, tables in [(1,'phase_one_baseline',BASE),(2,'imports_purchases_approvals',PHASE2),(3,'transfers_returns_trial',PHASE3)]:
             if version in applied:
                 continue
             for table in tables:

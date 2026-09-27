@@ -9,6 +9,7 @@ from pathlib import Path
 from threading import Lock
 from typing import Annotated, Literal
 from fastapi import FastAPI, Request, Response, Header
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -68,11 +69,17 @@ def create_app(engine=None):
         from .migrations import migrate
         migrate(engine)
         yield
-    app = FastAPI(title='义乌商贸库存管家',version='0.2.0',lifespan=lifespan)
+    app = FastAPI(title='义乌商贸库存管家',version='0.3.0',lifespan=lifespan)
     app.state.engine = engine
     app.add_middleware(TrustedHostMiddleware,allowed_hosts=['127.0.0.1','localhost','testserver'])
     attempts = defaultdict(deque)
     attempt_lock = Lock()
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_error(request,exc):
+        # Validation input can contain passwords; return only field diagnostics.
+        detail=[{k:e[k] for k in ('loc','msg','type')} for e in exc.errors()]
+        return JSONResponse({'detail':detail},status_code=422)
 
     @app.exception_handler(BusinessError)
     async def business_error(request,exc):
@@ -105,6 +112,9 @@ def create_app(engine=None):
             if not sess:raise BusinessError('UNAUTHENTICATED','请先登录',401)
             actor = c.execute(select(db.users).where(db.users.c.id==sess['user_id'])).mappings().first()
         if not actor:raise BusinessError('UNAUTHENTICATED','账号不存在',401)
+        from .accounts import active
+        with engine.connect() as c:
+            if not active(c,actor['id']):raise BusinessError('UNAUTHENTICATED','账号已停用',401)
         if write and not secrets.compare_digest(request.headers.get('x-csrf-token',''),sess['csrf']):
             raise BusinessError('CSRF_REJECTED','操作凭证失效，请刷新页面',403)
         return dict(actor),sess['csrf']
@@ -119,7 +129,9 @@ def create_app(engine=None):
             queue.append(time.time())
         with engine.connect() as c:
             actor=c.execute(select(db.users).where(db.users.c.username==body.username)).mappings().first()
-        if not actor or not verify_password(body.password,actor['password_hash']):
+        from .accounts import active
+        with engine.connect() as c:enabled=bool(actor) and active(c,actor['id'])
+        if not enabled or not verify_password(body.password,actor['password_hash']):
             raise BusinessError('LOGIN_FAILED','账号或密码错误',401)
         token,csrf=secrets.token_urlsafe(32),secrets.token_urlsafe(32)
         with db.write(engine) as c:
@@ -215,9 +227,11 @@ def create_app(engine=None):
             writer.writerow([safe(x) for x in [p['code'],p['name'],p['spec'],whs[r['warehouse_id']]['name'],r['g'],r['q'],r['d'],r['r'],r['t'],r['h'],r['b'],r['available'],r['offline_available'],r['updated_at']]])
         return Response('\ufeff'+out.getvalue(),media_type='text/csv; charset=utf-8',headers={'Content-Disposition':'attachment; filename="inventory.csv"'})
     @app.get('/health')
-    def health():return {'status':'ok','version':'0.2.0','environment':'local-development'}
+    def health():return {'status':'ok','version':'0.3.0','environment':'local-development'}
     from .phase2 import install
     install(app,engine,actor_for,scope)
+    from .phase3 import install as install_phase3
+    install_phase3(app,engine,actor_for,scope)
     static=Path(__file__).parent/'static'
     app.mount('/static',StaticFiles(directory=static),name='static')
     @app.get('/')

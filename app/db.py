@@ -38,11 +38,11 @@ requests = Table('idempotency', metadata, C('id', S, primary_key=True), C('tenan
                  C('key', S), C('fingerprint', S), C('response', JSON),
                  U('tenant_id','actor_id','key'))
 
-def make_engine(url=None):
+def make_engine(url=None, connect_options=None):
     if url is None:
         Path('.local').mkdir(exist_ok=True)
         url = os.environ.get('DATABASE_URL', 'sqlite:///.local/inventory.db')
-    engine = create_engine(url, connect_args={'check_same_thread': False, 'timeout': 30} if url.startswith('sqlite') else {}, pool_pre_ping=True)
+    engine = create_engine(url, connect_args=({'check_same_thread': False, 'timeout': 30} if url.startswith('sqlite') else {}) | (connect_options or {}), pool_pre_ping=True)
     if engine.dialect.name == 'sqlite':
         @event.listens_for(engine, 'connect')
         def setup(conn, _):

@@ -47,7 +47,7 @@ def test_migration_preserves_phase_one_and_repeats(tmp_path):
     migrate(engine);migrate(engine)
     with engine.connect() as c:
         assert c.scalar(select(db.documents.c.note))=='不可丢失'
-        assert list(c.execute(select(versions.c.version).order_by(versions.c.version)).scalars())==[1,2]
+        assert list(c.execute(select(versions.c.version).order_by(versions.c.version)).scalars())==[1,2,3]
     engine.dispose()
 
 def test_catalog_idempotence_and_required_key(env):

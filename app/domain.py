@@ -43,6 +43,8 @@ def stock_action(engine, actor, kind, payload, key):
     fingerprint = hashlib.sha256(json.dumps({'kind':kind,'body':payload},sort_keys=True,ensure_ascii=False).encode()).hexdigest()
     tenant = actor['tenant_id']
     with db.write(engine, tenant) as conn:
+        from .accounts import assert_current
+        assert_current(conn,actor)
         previous = conn.execute(select(db.requests).where(db.requests.c.tenant_id==tenant,
                     db.requests.c.actor_id==actor['id'], db.requests.c.key==key)).mappings().first()
         if previous:

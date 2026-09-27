@@ -1,0 +1,3 @@
+-r requirements-dev.txt
+# Optional isolated local PostgreSQL test runtime; not a production dependency.
+pgserver==0.1.4

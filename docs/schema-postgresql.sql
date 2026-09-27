@@ -1,4 +1,21 @@
--- Reference DDL only. Runtime PostgreSQL migration remains unverified.
+-- Reference DDL for v0.3.0. Apply runtime upgrades through app.migrations.migrate.
+-- Migration, concurrency and restore tested on isolated PostgreSQL 16.2.
+
+
+
+CREATE TABLE admin_audit (
+	id VARCHAR NOT NULL,
+	tenant_id VARCHAR,
+	actor_id VARCHAR,
+	action VARCHAR,
+	target_id VARCHAR,
+	before JSON,
+	after JSON,
+	created_at VARCHAR,
+	PRIMARY KEY (id)
+)
+
+;
 
 
 CREATE TABLE approval_requests (
@@ -194,6 +211,51 @@ CREATE TABLE purchase_receipts (
 ;
 
 
+CREATE TABLE quality_events (
+	id VARCHAR NOT NULL,
+	tenant_id VARCHAR,
+	warehouse_id VARCHAR,
+	sku_id VARCHAR,
+	return_id VARCHAR,
+	reference VARCHAR,
+	good INTEGER,
+	bad INTEGER,
+	reason VARCHAR,
+	document_id VARCHAR,
+	actor_id VARCHAR,
+	created_at VARCHAR,
+	PRIMARY KEY (id),
+	UNIQUE (tenant_id, reference)
+)
+
+;
+
+
+CREATE TABLE return_orders (
+	id VARCHAR NOT NULL,
+	tenant_id VARCHAR NOT NULL,
+	warehouse_id VARCHAR,
+	sku_id VARCHAR,
+	kind VARCHAR,
+	reference VARCHAR,
+	original_id VARCHAR,
+	quantity INTEGER,
+	good INTEGER,
+	bad INTEGER,
+	status VARCHAR,
+	version INTEGER,
+	reason VARCHAR,
+	actor_id VARCHAR,
+	document_id VARCHAR,
+	created_at VARCHAR,
+	PRIMARY KEY (id),
+	UNIQUE (tenant_id, kind, reference),
+	CHECK (quantity > 0 AND good >= 0 AND bad >= 0 AND good + bad <= quantity)
+)
+
+;
+
+
 CREATE TABLE reversal_links (
 	original_id VARCHAR NOT NULL,
 	tenant_id VARCHAR NOT NULL,
@@ -245,6 +307,84 @@ CREATE TABLE tenants (
 	id VARCHAR NOT NULL,
 	name VARCHAR NOT NULL,
 	PRIMARY KEY (id)
+)
+
+;
+
+
+CREATE TABLE transfer_claims (
+	id VARCHAR NOT NULL,
+	tenant_id VARCHAR,
+	transfer_id VARCHAR,
+	expected_version INTEGER,
+	reason VARCHAR,
+	requester_id VARCHAR,
+	reviewer_id VARCHAR,
+	note VARCHAR,
+	status VARCHAR,
+	created_at VARCHAR,
+	reviewed_at VARCHAR,
+	PRIMARY KEY (id)
+)
+
+;
+
+
+CREATE TABLE transfer_events (
+	id VARCHAR NOT NULL,
+	transfer_id VARCHAR NOT NULL,
+	kind VARCHAR,
+	reference VARCHAR,
+	items JSON,
+	document_ids JSON,
+	actor_id VARCHAR,
+	created_at VARCHAR,
+	PRIMARY KEY (id),
+	UNIQUE (transfer_id, kind, reference)
+)
+
+;
+
+
+CREATE TABLE transfer_lines (
+	id VARCHAR NOT NULL,
+	transfer_id VARCHAR NOT NULL,
+	sku_id VARCHAR,
+	quantity INTEGER,
+	sent INTEGER,
+	received INTEGER,
+	lost INTEGER,
+	PRIMARY KEY (id),
+	UNIQUE (transfer_id, sku_id),
+	CHECK (quantity > 0 AND sent >= 0 AND received >= 0 AND lost >= 0 AND sent <= quantity AND received + lost <= sent)
+)
+
+;
+
+
+CREATE TABLE transfers (
+	id VARCHAR NOT NULL,
+	tenant_id VARCHAR NOT NULL,
+	code VARCHAR,
+	warehouse_id VARCHAR,
+	destination_id VARCHAR,
+	status VARCHAR,
+	version INTEGER,
+	reason VARCHAR,
+	actor_id VARCHAR,
+	created_at VARCHAR,
+	PRIMARY KEY (id),
+	UNIQUE (tenant_id, code)
+)
+
+;
+
+
+CREATE TABLE user_settings (
+	user_id VARCHAR NOT NULL,
+	active INTEGER NOT NULL,
+	version INTEGER NOT NULL,
+	PRIMARY KEY (user_id)
 )
 
 ;
