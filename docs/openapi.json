@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "义乌商贸库存管家",
-    "version": "0.3.0"
+    "version": "0.4.1"
   },
   "paths": {
     "/api/v1/session": {
@@ -1547,6 +1547,280 @@
         }
       }
     },
+    "/api/v1/agent/status": {
+      "get": {
+        "summary": "Status",
+        "operationId": "status_api_v1_agent_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agent/ask": {
+      "post": {
+        "summary": "Ask",
+        "operationId": "ask_api_v1_agent_ask_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Ask"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agent/drafts": {
+      "post": {
+        "summary": "Prepare",
+        "operationId": "prepare_api_v1_agent_drafts_post",
+        "parameters": [
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 120,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Drafts",
+        "operationId": "drafts_api_v1_agent_drafts_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agent/drafts/from-question": {
+      "post": {
+        "summary": "Propose",
+        "operationId": "propose_api_v1_agent_drafts_from_question_post",
+        "parameters": [
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 120,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftQuestion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agent/drafts/{pid}/confirm": {
+      "post": {
+        "summary": "Confirm",
+        "operationId": "confirm_api_v1_agent_drafts__pid__confirm_post",
+        "parameters": [
+          {
+            "name": "pid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Pid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmDraft"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agent/drafts/{pid}/cancel": {
+      "post": {
+        "summary": "Cancel",
+        "operationId": "cancel_api_v1_agent_drafts__pid__cancel_post",
+        "parameters": [
+          {
+            "name": "pid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Pid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmDraft"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agent/action-audit": {
+      "get": {
+        "summary": "Audit",
+        "operationId": "audit_api_v1_agent_action_audit_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "summary": "Index",
@@ -1613,6 +1887,66 @@
         ],
         "title": "Adjustment"
       },
+      "Ask": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "model",
+              "inventory",
+              "issues"
+            ],
+            "title": "Mode",
+            "default": "model"
+          },
+          "question": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Question",
+            "default": ""
+          },
+          "warehouse_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warehouse Id"
+          },
+          "sku_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sku Id"
+          },
+          "issue": {
+            "type": "string",
+            "enum": [
+              "all",
+              "low_stock",
+              "pending_quality",
+              "in_transit"
+            ],
+            "title": "Issue",
+            "default": "all"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Ask"
+      },
       "Close": {
         "properties": {
           "expected_version": {
@@ -1635,6 +1969,22 @@
           "reason"
         ],
         "title": "Close"
+      },
+      "ConfirmDraft": {
+        "properties": {
+          "confirmation_token": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 20,
+            "title": "Confirmation Token"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "confirmation_token"
+        ],
+        "title": "ConfirmDraft"
       },
       "CustomerReturn": {
         "properties": {
@@ -1713,6 +2063,107 @@
         "additionalProperties": false,
         "type": "object",
         "title": "Delta"
+      },
+      "DraftInput": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "transfer",
+              "purchase",
+              "adjustment"
+            ],
+            "title": "Action"
+          },
+          "warehouse_id": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Warehouse Id"
+          },
+          "sku_id": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Sku Id"
+          },
+          "destination_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Id"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1000000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "delta_g": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1000000.0,
+                "minimum": -1000000.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta G"
+          },
+          "supplier": {
+            "type": "string",
+            "maxLength": 120,
+            "title": "Supplier",
+            "default": ""
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 2,
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "action",
+          "warehouse_id",
+          "sku_id",
+          "reason"
+        ],
+        "title": "DraftInput"
+      },
+      "DraftQuestion": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 2,
+            "title": "Question"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "DraftQuestion"
       },
       "EditAccount": {
         "properties": {

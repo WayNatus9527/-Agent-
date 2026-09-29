@@ -36,19 +36,21 @@ def event(c,actor,tid,kind,reference,items,docs):
 
 def transfer_create(engine,actor,body,key):
     require_role(actor,'admin','warehouse')
-    def apply(c):
-        get_warehouse(c,actor,body['warehouse_id'],True)
-        get_warehouse(c,{**actor,'role':'admin'},body['destination_id'],True)
-        if body['warehouse_id']==body['destination_id']:w.fail('SAME_WAREHOUSE','调出仓和调入仓必须不同',422)
-        row={k:v for k,v in body.items() if k!='lines'}
-        row.update(id=uid(),tenant_id=actor['tenant_id'],status='draft',version=1,actor_id=actor['id'],created_at=now())
-        c.execute(insert(transfers).values(**row))
-        for item in body['lines']:
-            get_sku(c,actor,item['sku_id'])
-            c.execute(insert(transfer_lines).values(id=uid(),transfer_id=row['id'],sku_id=item['sku_id'],quantity=item['quantity'],sent=0,received=0,lost=0))
-        event(c,actor,row['id'],'create',row['code'],body['lines'],[])
-        return transfer_view(c,row)
-    return w.command(engine,actor,'transfer.create',body,key,apply)
+    return w.command(engine,actor,'transfer.create',body,key,lambda c: transfer_create_in_transaction(c,actor,body))
+
+def transfer_create_in_transaction(c,actor,body):
+    require_role(actor,'admin','warehouse')
+    get_warehouse(c,actor,body['warehouse_id'],True)
+    get_warehouse(c,{**actor,'role':'admin'},body['destination_id'],True)
+    if body['warehouse_id']==body['destination_id']:w.fail('SAME_WAREHOUSE','调出仓和调入仓必须不同',422)
+    row={k:v for k,v in body.items() if k!='lines'}
+    row.update(id=uid(),tenant_id=actor['tenant_id'],status='draft',version=1,actor_id=actor['id'],created_at=now())
+    c.execute(insert(transfers).values(**row))
+    for item in body['lines']:
+        get_sku(c,actor,item['sku_id'])
+        c.execute(insert(transfer_lines).values(id=uid(),transfer_id=row['id'],sku_id=item['sku_id'],quantity=item['quantity'],sent=0,received=0,lost=0))
+    event(c,actor,row['id'],'create',row['code'],body['lines'],[])
+    return transfer_view(c,row)
 
 def transfer_action(engine,actor,tid,action,body,key):
     require_role(actor,'admin','warehouse')

@@ -1,7 +1,6 @@
--- Reference DDL for v0.3.0. Apply runtime upgrades through app.migrations.migrate.
--- Migration, concurrency and restore tested on isolated PostgreSQL 16.2.
+-- Reference DDL for v0.4.1 (migration 4). Apply runtime upgrades through app.migrations.migrate.
 
-
+-- Migration and regression tested on isolated PostgreSQL 16.2.
 
 CREATE TABLE admin_audit (
 	id VARCHAR NOT NULL,
@@ -13,10 +12,41 @@ CREATE TABLE admin_audit (
 	after JSON,
 	created_at VARCHAR,
 	PRIMARY KEY (id)
-)
+);
 
-;
+CREATE TABLE agent_action_audit (
+	id VARCHAR NOT NULL,
+	tenant_id VARCHAR NOT NULL,
+	actor_id VARCHAR NOT NULL,
+	proposal_id VARCHAR NOT NULL,
+	warehouse_id VARCHAR NOT NULL,
+	event VARCHAR NOT NULL,
+	code VARCHAR,
+	detail JSON NOT NULL,
+	created_at VARCHAR NOT NULL,
+	PRIMARY KEY (id)
+);
 
+CREATE TABLE agent_proposals (
+	id VARCHAR NOT NULL,
+	tenant_id VARCHAR NOT NULL,
+	actor_id VARCHAR NOT NULL,
+	request_key VARCHAR NOT NULL,
+	fingerprint VARCHAR NOT NULL,
+	action VARCHAR NOT NULL,
+	payload JSON NOT NULL,
+	preview JSON NOT NULL,
+	auth_version INTEGER NOT NULL,
+	stock_version INTEGER NOT NULL,
+	token VARCHAR NOT NULL,
+	status VARCHAR NOT NULL,
+	result JSON,
+	created_at VARCHAR,
+	expires_at VARCHAR,
+	finished_at VARCHAR,
+	PRIMARY KEY (id),
+	UNIQUE (tenant_id, actor_id, request_key)
+);
 
 CREATE TABLE approval_requests (
 	id VARCHAR NOT NULL,
@@ -36,10 +66,7 @@ CREATE TABLE approval_requests (
 	created_at VARCHAR,
 	reviewed_at VARCHAR,
 	PRIMARY KEY (id)
-)
-
-;
-
+);
 
 CREATE TABLE balances (
 	id VARCHAR NOT NULL,
@@ -73,10 +100,7 @@ CREATE TABLE balances (
 	CHECK (online >= 0),
 	CHECK (pending >= 0),
 	CHECK (withdrawing >= 0)
-)
-
-;
-
+);
 
 CREATE TABLE documents (
 	id VARCHAR NOT NULL,
@@ -91,10 +115,7 @@ CREATE TABLE documents (
 	created_at VARCHAR,
 	status VARCHAR,
 	PRIMARY KEY (id)
-)
-
-;
-
+);
 
 CREATE TABLE idempotency (
 	id VARCHAR NOT NULL,
@@ -105,10 +126,7 @@ CREATE TABLE idempotency (
 	response JSON,
 	PRIMARY KEY (id),
 	UNIQUE (tenant_id, actor_id, key)
-)
-
-;
-
+);
 
 CREATE TABLE import_batches (
 	id VARCHAR NOT NULL,
@@ -123,10 +141,7 @@ CREATE TABLE import_batches (
 	applied_at VARCHAR,
 	PRIMARY KEY (id),
 	UNIQUE (tenant_id, kind, digest)
-)
-
-;
-
+);
 
 CREATE TABLE ledger (
 	id VARCHAR NOT NULL,
@@ -143,10 +158,7 @@ CREATE TABLE ledger (
 	created_at VARCHAR,
 	PRIMARY KEY (id),
 	UNIQUE (document_id)
-)
-
-;
-
+);
 
 CREATE TABLE outbox (
 	id VARCHAR NOT NULL,
@@ -158,10 +170,7 @@ CREATE TABLE outbox (
 	created_at VARCHAR,
 	PRIMARY KEY (id),
 	UNIQUE (document_id)
-)
-
-;
-
+);
 
 CREATE TABLE purchase_lines (
 	id VARCHAR NOT NULL,
@@ -173,10 +182,7 @@ CREATE TABLE purchase_lines (
 	UNIQUE (order_id, sku_id),
 	CHECK (ordered > 0),
 	CHECK (received >= 0 AND received <= ordered)
-)
-
-;
-
+);
 
 CREATE TABLE purchase_orders (
 	id VARCHAR NOT NULL,
@@ -192,10 +198,7 @@ CREATE TABLE purchase_orders (
 	close_reason VARCHAR,
 	PRIMARY KEY (id),
 	UNIQUE (tenant_id, code)
-)
-
-;
-
+);
 
 CREATE TABLE purchase_receipts (
 	id VARCHAR NOT NULL,
@@ -206,10 +209,7 @@ CREATE TABLE purchase_receipts (
 	created_at VARCHAR,
 	PRIMARY KEY (id),
 	UNIQUE (tenant_id, order_id, reference)
-)
-
-;
-
+);
 
 CREATE TABLE quality_events (
 	id VARCHAR NOT NULL,
@@ -226,10 +226,7 @@ CREATE TABLE quality_events (
 	created_at VARCHAR,
 	PRIMARY KEY (id),
 	UNIQUE (tenant_id, reference)
-)
-
-;
-
+);
 
 CREATE TABLE return_orders (
 	id VARCHAR NOT NULL,
@@ -251,10 +248,7 @@ CREATE TABLE return_orders (
 	PRIMARY KEY (id),
 	UNIQUE (tenant_id, kind, reference),
 	CHECK (quantity > 0 AND good >= 0 AND bad >= 0 AND good + bad <= quantity)
-)
-
-;
-
+);
 
 CREATE TABLE reversal_links (
 	original_id VARCHAR NOT NULL,
@@ -263,19 +257,13 @@ CREATE TABLE reversal_links (
 	approval_id VARCHAR,
 	PRIMARY KEY (original_id),
 	UNIQUE (reversal_id)
-)
-
-;
-
+);
 
 CREATE TABLE schema_migrations (
 	version SERIAL NOT NULL,
 	name VARCHAR NOT NULL,
 	PRIMARY KEY (version)
-)
-
-;
-
+);
 
 CREATE TABLE sessions (
 	token_hash VARCHAR NOT NULL,
@@ -283,10 +271,7 @@ CREATE TABLE sessions (
 	csrf VARCHAR,
 	expires INTEGER,
 	PRIMARY KEY (token_hash)
-)
-
-;
-
+);
 
 CREATE TABLE skus (
 	id VARCHAR NOT NULL,
@@ -298,19 +283,13 @@ CREATE TABLE skus (
 	barcode VARCHAR,
 	PRIMARY KEY (id),
 	UNIQUE (tenant_id, code)
-)
-
-;
-
+);
 
 CREATE TABLE tenants (
 	id VARCHAR NOT NULL,
 	name VARCHAR NOT NULL,
 	PRIMARY KEY (id)
-)
-
-;
-
+);
 
 CREATE TABLE transfer_claims (
 	id VARCHAR NOT NULL,
@@ -325,10 +304,7 @@ CREATE TABLE transfer_claims (
 	created_at VARCHAR,
 	reviewed_at VARCHAR,
 	PRIMARY KEY (id)
-)
-
-;
-
+);
 
 CREATE TABLE transfer_events (
 	id VARCHAR NOT NULL,
@@ -341,10 +317,7 @@ CREATE TABLE transfer_events (
 	created_at VARCHAR,
 	PRIMARY KEY (id),
 	UNIQUE (transfer_id, kind, reference)
-)
-
-;
-
+);
 
 CREATE TABLE transfer_lines (
 	id VARCHAR NOT NULL,
@@ -357,10 +330,7 @@ CREATE TABLE transfer_lines (
 	PRIMARY KEY (id),
 	UNIQUE (transfer_id, sku_id),
 	CHECK (quantity > 0 AND sent >= 0 AND received >= 0 AND lost >= 0 AND sent <= quantity AND received + lost <= sent)
-)
-
-;
-
+);
 
 CREATE TABLE transfers (
 	id VARCHAR NOT NULL,
@@ -375,20 +345,14 @@ CREATE TABLE transfers (
 	created_at VARCHAR,
 	PRIMARY KEY (id),
 	UNIQUE (tenant_id, code)
-)
-
-;
-
+);
 
 CREATE TABLE user_settings (
 	user_id VARCHAR NOT NULL,
 	active INTEGER NOT NULL,
 	version INTEGER NOT NULL,
 	PRIMARY KEY (user_id)
-)
-
-;
-
+);
 
 CREATE TABLE users (
 	id VARCHAR NOT NULL,
@@ -400,10 +364,7 @@ CREATE TABLE users (
 	warehouse_ids JSON,
 	PRIMARY KEY (id),
 	UNIQUE (username)
-)
-
-;
-
+);
 
 CREATE TABLE warehouses (
 	id VARCHAR NOT NULL,
@@ -415,6 +376,4 @@ CREATE TABLE warehouses (
 	authority VARCHAR,
 	PRIMARY KEY (id),
 	UNIQUE (tenant_id, code)
-)
-
-;
+);

@@ -150,16 +150,18 @@ def order_view(c,row):
 
 def purchase_create(engine,actor,body,key):
     require_role(actor,'admin','warehouse')
-    def apply(c):
-        get_warehouse(c,actor,body['warehouse_id'],True)
-        row={k:v for k,v in body.items() if k!='lines'}
-        row.update(id=uid(),tenant_id=actor['tenant_id'],status='open',version=1,actor_id=actor['id'],created_at=now(),close_reason='')
-        c.execute(insert(orders).values(**row))
-        for item in body['lines']:
-            get_sku(c,actor,item['sku_id'])
-            c.execute(insert(lines).values(id=uid(),order_id=row['id'],sku_id=item['sku_id'],ordered=item['quantity'],received=0))
-        return order_view(c,row)
-    return command(engine,actor,'purchase.create',body,key,apply)
+    return command(engine,actor,'purchase.create',body,key,lambda c: purchase_create_in_transaction(c,actor,body))
+
+def purchase_create_in_transaction(c,actor,body):
+    require_role(actor,'admin','warehouse')
+    get_warehouse(c,actor,body['warehouse_id'],True)
+    row={k:v for k,v in body.items() if k!='lines'}
+    row.update(id=uid(),tenant_id=actor['tenant_id'],status='open',version=1,actor_id=actor['id'],created_at=now(),close_reason='')
+    c.execute(insert(orders).values(**row))
+    for item in body['lines']:
+        get_sku(c,actor,item['sku_id'])
+        c.execute(insert(lines).values(id=uid(),order_id=row['id'],sku_id=item['sku_id'],ordered=item['quantity'],received=0))
+    return order_view(c,row)
 
 def purchase_receive(engine,actor,order_id,body,key):
     require_role(actor,'admin','warehouse')
@@ -206,17 +208,19 @@ def original(c,actor,document_id):
 
 def approval_request(engine,actor,body,key):
     require_role(actor,'admin','warehouse')
-    def apply(c):
-        if body['kind']=='reversal':
-            doc,delta=original(c,actor,body['original_id']);warehouse_id=doc['warehouse_id'];sku_id=doc['sku_id']
-        else:delta=body['delta'];warehouse_id=body['warehouse_id'];sku_id=body['sku_id']
-        stock=balance(c,actor,warehouse_id,sku_id)
-        if stock['version']!=body['expected_version']:fail('VERSION_CONFLICT','库存已变化，请刷新后重新申请')
-        valid_balance({**stock,**{f:stock[f]+delta.get(f,0) for f in FIELDS}})
-        row=dict(id=uid(),tenant_id=actor['tenant_id'],warehouse_id=warehouse_id,sku_id=sku_id,kind=body['kind'],original_id=body.get('original_id'),delta=delta,expected_version=body['expected_version'],reason=body['reason'],requester_id=actor['id'],reviewer_id=None,review_note=None,status='pending',document_id=None,created_at=now(),reviewed_at=None)
-        c.execute(insert(approvals).values(**row))
-        return row
-    return command(engine,actor,'approval.request',body,key,apply)
+    return command(engine,actor,'approval.request',body,key,lambda c: approval_request_in_transaction(c,actor,body))
+
+def approval_request_in_transaction(c,actor,body):
+    require_role(actor,'admin','warehouse')
+    if body['kind']=='reversal':
+        doc,delta=original(c,actor,body['original_id']);warehouse_id=doc['warehouse_id'];sku_id=doc['sku_id']
+    else:delta=body['delta'];warehouse_id=body['warehouse_id'];sku_id=body['sku_id']
+    stock=balance(c,actor,warehouse_id,sku_id)
+    if stock['version']!=body['expected_version']:fail('VERSION_CONFLICT','库存已变化，请刷新后重新申请')
+    valid_balance({**stock,**{f:stock[f]+delta.get(f,0) for f in FIELDS}})
+    row=dict(id=uid(),tenant_id=actor['tenant_id'],warehouse_id=warehouse_id,sku_id=sku_id,kind=body['kind'],original_id=body.get('original_id'),delta=delta,expected_version=body['expected_version'],reason=body['reason'],requester_id=actor['id'],reviewer_id=None,review_note=None,status='pending',document_id=None,created_at=now(),reviewed_at=None)
+    c.execute(insert(approvals).values(**row))
+    return row
 
 def approval_review(engine,actor,approval_id,body,key):
     require_role(actor,'admin')
